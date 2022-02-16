@@ -36,7 +36,7 @@ resource "openstack_compute_instance_v2" "web_instance" {
   ]
 
   network {
-    name = "gitpod"
+    name = "terransibletest"
   }
 
   metadata = {
@@ -71,7 +71,7 @@ resource "openstack_compute_instance_v2" "db_instance" {
   ]
 
   network {
-    name = "gitpod"
+    name = "terransibletest"
   }
 
   metadata = {

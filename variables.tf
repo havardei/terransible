@@ -23,28 +23,12 @@ variable "metadata" {
   default = []
 }
 
-# Security group defaults
-variable "allow_ssh_from_v6" {
-  type    = list(string)
-  default = []
-}
-
 variable "allow_ssh_from_v4" {
   type    = list(string)
   default = []
 }
 
-variable "allow_http_from_v6" {
-  type    = list(string)
-  default = []
-}
-
 variable "allow_http_from_v4" {
-  type    = list(string)
-  default = []
-}
-
-variable "allow_mysql_from_v6" {
   type    = list(string)
   default = []
 }
@@ -68,7 +52,7 @@ variable "role_flavor" {
   type = map(string)
   default = {
     "web" = "m1.small"
-    "db"  = "m1.medium"
+    "db"  = "m1.small"
   }
 }
 
