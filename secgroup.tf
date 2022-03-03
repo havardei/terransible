@@ -1,21 +1,21 @@
 # Security group SSH + ICMP
 resource "openstack_networking_secgroup_v2" "instance_ssh_access" {
   region      = var.region
-  name        = "${terraform.workspace}-${var.name}-ssh"
+  name        = "${var.name}-ssh"
   description = "Security group for allowing SSH and ICMP access"
 }
 
 # Security group HTTP
 resource "openstack_networking_secgroup_v2" "instance_web_access" {
   region      = var.region
-  name        = "${terraform.workspace}-${var.name}-web"
+  name        = "${var.name}-web"
   description = "Security group for allowing HTTP access"
 }
 
 # Security group MySQL
 resource "openstack_networking_secgroup_v2" "instance_db_access" {
   region      = var.region
-  name        = "${terraform.workspace}-${var.name}-db"
+  name        = "${var.name}-db"
   description = "Security group for allowing MySQL access"
 }
 

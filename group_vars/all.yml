@@ -1,3 +1,5 @@
+db_inv_name: terransibletest-db-0
+web_inv_name: terransibletest-web-0
 mysql_root_password: 123abc
 db_passwd: abc123
 db_name: ourdb

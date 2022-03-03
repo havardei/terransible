@@ -69,7 +69,7 @@
 - hosts: os_metadata_my_server_role=web
   become: true
   vars:
-    db_ip: "{{ hostvars['db-0'].ip }}"
+    db_ip: "{{ hostvars[db_inv_name].ip }}"
   tasks:
   - name: Install Apache
     apt:
@@ -91,8 +91,7 @@
       name: php-mysql
       state: present
     notify:
-    - restart Apache
-
+    - restart Apache2
 
   - name: Copy index.php template
     ansible.builtin.template:
@@ -102,8 +101,14 @@
   - name: remove placeholder file
     ansible.builtin.shell: "rm -f /var/www/html/index.html"
 
+  - name: Print the address for the web-app
+    ansible.builtin.debug:
+      msg: Web app should now be available at http://{{ hostvars[web_inv_name].public_ipv4 }}
+
   handlers:
-  - name: restart Apache
+  - name: restart Apache2
     systemd:
       name: "apache2"
       state: restarted
+
+  

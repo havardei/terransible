@@ -1,5 +1,6 @@
 # Variables
 variable "region" {
+  default = "NTNU-IT"
 }
 
 variable "name" {
@@ -8,14 +9,6 @@ variable "name" {
 
 variable "ssh_public_key" {
   default = "~/.ssh/id_rsa.pub"
-}
-
-#variable "network" {
-#  default = ""
-#}
-
-variable "volume_size" {
-  default = 20
 }
 
 variable "metadata" {
