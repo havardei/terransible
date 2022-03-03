@@ -3,16 +3,16 @@ variable "region" {
 }
 
 variable "name" {
-  default = "terransibletest"
+  default = "didnt-read-docs"
 }
 
 variable "ssh_public_key" {
   default = "~/.ssh/id_rsa.pub"
 }
 
-variable "network" {
-  default = ""
-}
+#variable "network" {
+#  default = ""
+#}
 
 variable "volume_size" {
   default = 20

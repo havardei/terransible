@@ -1,6 +1,6 @@
 # Define required providers
 terraform {
-  required_version = ">= 1.0"
+  required_version = ">= 0.13.7"
   required_providers {
     openstack = {
       source  = "terraform-provider-openstack/openstack"
@@ -8,27 +8,60 @@ terraform {
   }
 }
 
-# Configure the OpenStack Provider
-# Empty means using environment variables "OS_*". More info:
-# https://registry.terraform.io/providers/terraform-provider-openstack/openstack/latest/docs
 provider "openstack" {}
 
 # SSH key
 resource "openstack_compute_keypair_v2" "keypair" {
   region     = var.region
-  name       = "${terraform.workspace}-${var.name}"
+  name       = "${var.name}"
   public_key = file(var.ssh_public_key)
 }
 
-# Web servers
+#Network setup
+resource "openstack_networking_router_v2" "router" {
+  count               = 1
+  name                = "${var.name}-router"
+  admin_state_up      = "true"
+  external_network_id = "7b4df2ac-be48-44fc-888e-3706f49b86e3"
+}
+
+resource "openstack_networking_network_v2" "network" {
+  count          = 1
+  name           = "${var.name}-network"
+  dns_domain     = null
+  admin_state_up = "true"
+}
+
+resource "openstack_networking_subnet_v2" "subnet" {
+  count           = 1
+  name            = "${var.name}-internal-network"
+  network_id      = openstack_networking_network_v2.network[count.index].id
+  cidr            = "10.0.0.0/24"
+  ip_version      = 4
+}
+
+resource "openstack_networking_router_interface_v2" "interface" {
+  count     = 1
+  router_id = openstack_networking_router_v2.router[count.index].id
+  subnet_id = openstack_networking_subnet_v2.subnet[count.index].id
+}
+resource "openstack_networking_floatingip_v2" "fipweb" {
+  count      = lookup(var.role_count, "web", 0)
+  pool       = "ntnu-internal"
+}
+resource "openstack_networking_floatingip_v2" "fipdb" {
+  count       = lookup(var.role_count, "db", 0)
+  pool       = "ntnu-internal"
+} 
+
 resource "openstack_compute_instance_v2" "web_instance" {
   region      = var.region
   count       = lookup(var.role_count, "web", 0)
-  name        = "${var.region}-web-${count.index}"
+  name        = "web-${count.index}"
   image_name  = lookup(var.role_image, "web", "unknown")
   flavor_name = lookup(var.role_flavor, "web", "unknown")
 
-  key_pair = "${terraform.workspace}-${var.name}"
+  key_pair = "${var.name}"
   security_groups = [
     "default",
     "${terraform.workspace}-${var.name}-ssh",
@@ -36,7 +69,7 @@ resource "openstack_compute_instance_v2" "web_instance" {
   ]
 
   network {
-    name = "terransibletest"
+    name = "${var.name}-network"
   }
 
   metadata = {
@@ -52,6 +85,7 @@ resource "openstack_compute_instance_v2" "web_instance" {
   depends_on = [
     openstack_networking_secgroup_v2.instance_ssh_access,
     openstack_networking_secgroup_v2.instance_web_access,
+    openstack_networking_network_v2.network[0]
   ]
 }
 
@@ -59,11 +93,11 @@ resource "openstack_compute_instance_v2" "web_instance" {
 resource "openstack_compute_instance_v2" "db_instance" {
   region      = var.region
   count       = lookup(var.role_count, "db", 0)
-  name        = "${var.region}-db-${count.index}"
+  name        = "db-${count.index}"
   image_name  = lookup(var.role_image, "db", "unknown")
   flavor_name = lookup(var.role_flavor, "db", "unknown")
 
-  key_pair = "${terraform.workspace}-${var.name}"
+  key_pair = "${var.name}"
   security_groups = [
     "default",
     "${terraform.workspace}-${var.name}-ssh",
@@ -71,7 +105,7 @@ resource "openstack_compute_instance_v2" "db_instance" {
   ]
 
   network {
-    name = "terransibletest"
+    name = "${var.name}-network"
   }
 
   metadata = {
@@ -88,6 +122,7 @@ resource "openstack_compute_instance_v2" "db_instance" {
   depends_on = [
     openstack_networking_secgroup_v2.instance_ssh_access,
     openstack_networking_secgroup_v2.instance_db_access,
+    openstack_networking_network_v2.network[0]
   ]
 }
 
@@ -101,4 +136,17 @@ resource "openstack_blockstorage_volume_v2" "volume" {
 resource "openstack_compute_volume_attach_v2" "attach_vol" {
   instance_id = openstack_compute_instance_v2.db_instance[0].id
   volume_id   = openstack_blockstorage_volume_v2.volume.id
+}
+resource "openstack_compute_floatingip_associate_v2" "associate_fip_web" {
+  count			= lookup(var.role_count, "web", 0)
+  instance_id           = element(openstack_compute_instance_v2.web_instance.*.id, count.index)
+  floating_ip		= openstack_networking_floatingip_v2.fipweb[count.index].address
+  wait_until_associated = "false"
+}
+
+resource "openstack_compute_floatingip_associate_v2" "associate_fip_db" {
+  count			= lookup(var.role_count, "db", 0)
+  instance_id           = element(openstack_compute_instance_v2.db_instance.*.id, count.index)
+  floating_ip		= openstack_networking_floatingip_v2.fipdb[count.index].address
+  wait_until_associated = "false"
 }

@@ -1,0 +1,4 @@
+mysql_root_password: 123abc
+db_passwd: abc123
+db_name: ourdb
+db_user: ourdb 
